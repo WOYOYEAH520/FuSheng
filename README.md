@@ -8,6 +8,9 @@
 - 换音色：RVC 推理（RMVPE 提取音高，检索索引 0.75 混合）
 - 混音母带：人声/伴奏按 50 ms RMS 包络做电平匹配 → alimiter → loudnorm −11 LUFS，输出 320k MP3 + 无损 WAV
 
+> **下载说明**：仓库里的几个模型文件（hubert_base、rmvpe、BS-RoFormer 权重）用 **Git LFS** 管理。
+> 请用 `git clone` 拉取（没装 LFS 就先 `git lfs install`）；直接点 “Download ZIP” 只会拿到指针文件，程序跑不起来。
+
 ---
 
 ## 一、安装
