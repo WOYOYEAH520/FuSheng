@@ -1,0 +1,11 @@
+{
+  "FeiYuVoice": {
+    "path": "assets/weights/FeiYuVoice.pth",
+    "index": "assets/indices/FeiYuVoice.index",
+    "sr": "40k",
+    "f0": 1,
+    "note": "RVC v2 · 40 kHz · 带检索索引",
+    "created": "",
+    "default": true
+  }
+}

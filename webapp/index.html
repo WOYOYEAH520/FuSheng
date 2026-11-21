@@ -1,0 +1,1745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>浮声 · 翻唱工作台</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%235b7cfa'/%3E%3Cpath d='M40 14v25.5a8.5 8.5 0 1 1-4-7.2V21l-14 3.2v20.3a8.5 8.5 0 1 1-4-7.2V19.5l22-5.5z' fill='white'/%3E%3C/svg%3E" />
+<style>
+  :root{
+    color-scheme:dark;
+    --bg:#0a0d12; --bg2:#0d1118; --panel:#121821; --panel2:#0f141c;
+    --line:#222c3b; --line2:#2c3a4f;
+    --text:#e8eef8; --dim:#93a0b3; --muted:#66748a;
+    --accent:#6ea8fe; --accent2:#8b7bff;
+    --ok:#3ddc97; --err:#ff6b7a; --warn:#f5b544;
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; min-height:100vh; color:var(--text);
+    font:14.5px/1.62 "Segoe UI","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    background:
+      radial-gradient(1100px 520px at 18% -8%, #16233a 0%, transparent 58%),
+      radial-gradient(900px 480px at 92% 4%, #1b1733 0%, transparent 52%),
+      var(--bg);
+  }
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  button:disabled{cursor:not-allowed}
+  a{color:var(--accent)}
+
+  /* ---------------- top bar ---------------- */
+  .topbar{position:sticky;top:0;z-index:40;background:rgba(10,13,18,.8);
+    border-bottom:1px solid rgba(34,44,59,.85);backdrop-filter:blur(16px)}
+  .topbar-inner{max-width:1060px;margin:0 auto;padding:11px 22px;display:flex;align-items:center;gap:22px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15.5px;letter-spacing:.3px;white-space:nowrap}
+  .logo{width:31px;height:31px;border-radius:10px;display:grid;place-items:center;
+    background:linear-gradient(135deg,#4f7ff0 0%,#8b7bff 100%);
+    box-shadow:0 6px 18px -8px rgba(91,124,250,.9);font-size:15px;color:#fff}
+  .nav{display:flex;gap:3px;background:#0c1119;border:1px solid var(--line);padding:4px;border-radius:12px}
+  .nav button{padding:7px 20px;border-radius:9px;color:var(--dim);font-size:13.5px;transition:.16s;white-space:nowrap}
+  .nav button:hover{color:var(--text)}
+  .nav button.on{color:#fff;background:linear-gradient(180deg,#26344d,#1c2637);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+  .tabdot{display:none;width:6px;height:6px;border-radius:50%;background:var(--warn);margin-left:7px;
+    vertical-align:2px;animation:blink 1.2s ease-in-out infinite}
+  .nav button.busy .tabdot{display:inline-block}
+  @keyframes blink{0%,100%{opacity:.25}50%{opacity:1}}
+  .top-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+
+  .container{max-width:1060px;margin:0 auto;padding:22px 22px 70px}
+
+  /* ---------------- buttons ---------------- */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    padding:9px 16px;border-radius:10px;font-size:13.5px;border:1px solid transparent;
+    transition:.16s;white-space:nowrap}
+  .btn.primary{background:linear-gradient(135deg,#4a78ea,#6c5ce7);color:#fff;font-weight:600;
+    box-shadow:0 8px 20px -10px rgba(91,124,250,.85)}
+  .btn.primary:hover:not(:disabled){filter:brightness(1.09)}
+  .btn.ghost{background:#141b26;border-color:var(--line);color:var(--text)}
+  .btn.ghost:hover:not(:disabled){border-color:var(--line2);background:#182131}
+  .btn.small{font-size:12px;padding:6px 11px;border-radius:8px}
+  .btn:disabled{opacity:.4;filter:grayscale(.35);cursor:not-allowed}
+  .btn.primary:disabled{opacity:1;filter:none;background:#181f2b;color:#5f6d81;
+    border-color:#283447;box-shadow:none}
+
+  /* ---------------- headings ---------------- */
+  .pagehead{margin:26px 0 18px}
+  .pagehead h1{font-size:24px;margin:0 0 7px;letter-spacing:.2px}
+  .pagehead p{margin:0;color:var(--dim);font-size:13px}
+  .eyebrow{font-size:11px;letter-spacing:.16em;color:var(--accent);text-transform:uppercase;margin-bottom:6px}
+
+  .sessionbar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+    margin:0 0 16px;padding:11px 15px;background:rgba(15,20,28,.8);
+    border:1px solid var(--line);border-radius:12px;flex-wrap:wrap}
+  .sbleft{flex:1;min-width:0}
+  .sbtitle{font-weight:600;font-size:15px;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;cursor:text}
+  .sbtitle:hover{color:#fff}
+  .sbmeta{font-size:12px;color:var(--dim);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sbloc{font-size:11px;color:var(--muted);margin-top:3px;word-break:break-all}
+  .sbact{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .titleinput{width:min(420px,100%);font-size:15px;font-weight:600;padding:5px 8px;
+    border-radius:8px;border:1px solid var(--accent);background:#0b1017;color:var(--text);outline:none}
+  .btn.danger{color:#ffb3bb;border-color:rgba(255,107,122,.25)}
+  .btn.danger:hover:not(:disabled){background:rgba(255,107,122,.08);border-color:rgba(255,107,122,.45)}
+
+  /* ---------------- steps ---------------- */
+  .steps{display:flex;flex-direction:column;gap:13px}
+  .step{display:grid;grid-template-columns:42px minmax(0,1fr);gap:14px;align-items:stretch}
+  .rail{display:flex;flex-direction:column;align-items:center;padding-top:17px}
+  .num{width:34px;height:34px;flex:0 0 34px;border-radius:50%;display:grid;place-items:center;
+    border:1px solid var(--line);background:var(--panel);color:var(--dim);font-size:13px;font-weight:700;
+    transition:.2s}
+  .rail::after{content:"";width:2px;flex:1;margin-top:8px;border-radius:2px;
+    background:linear-gradient(180deg,var(--line),rgba(34,44,59,.15))}
+  .step:last-child .rail::after{display:none}
+  .step.done .num{background:rgba(61,220,151,.11);border-color:rgba(61,220,151,.4);color:var(--ok)}
+  .step.running .num{background:linear-gradient(135deg,#3b6fd4,#6a5cff);border-color:transparent;color:#fff;
+    animation:pulse 1.7s ease-out infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(110,168,254,.3)}70%{box-shadow:0 0 0 8px rgba(110,168,254,0)}100%{box-shadow:0 0 0 0 rgba(110,168,254,0)}}
+  .step.error .num{background:rgba(255,107,122,.1);border-color:rgba(255,107,122,.4);color:var(--err)}
+
+  .card{background:linear-gradient(180deg,rgba(19,25,35,.94),rgba(15,20,28,.94));
+    border:1px solid var(--line);border-radius:var(--radius)}
+  .step-card{padding:17px 20px;transition:border-color .2s,background .2s}
+  .step.done .step-card{border-color:#20392f}
+  .step.running .step-card{border-color:#2c3d5e}
+  .step.error .step-card{border-color:#4a2830}
+  .step.locked .step-card{border-color:#1d2634}
+  .step.locked .num{opacity:.75}
+
+  .step-head{display:flex;align-items:flex-start;gap:12px}
+  .step-title{flex:1;min-width:0}
+  .step-title h2{font-size:15.5px;margin:0 0 3px;letter-spacing:.2px}
+  .step-title p{margin:0;color:var(--dim);font-size:12.5px;line-height:1.55}
+  .pill{font-size:11.5px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);
+    color:var(--dim);white-space:nowrap;margin-top:1px;transition:.16s}
+  .step.done .pill{color:var(--ok);border-color:rgba(61,220,151,.35);background:rgba(61,220,151,.07)}
+  .step.running .pill{color:#bcd4ff;border-color:rgba(110,168,254,.4);background:rgba(110,168,254,.1)}
+  .step.error .pill{color:var(--err);border-color:rgba(255,107,122,.35);background:rgba(255,107,122,.07)}
+  .tag{font-size:10.5px;padding:1px 7px;border-radius:999px;border:1px solid var(--line2);color:var(--dim);
+    white-space:nowrap}
+  .tag.on{color:var(--accent);border-color:rgba(110,168,254,.4);background:rgba(110,168,254,.08)}
+  .tag.warm{color:var(--warn);border-color:rgba(245,181,68,.35);background:rgba(245,181,68,.07)}
+
+  .step-body{margin-top:13px}
+  .hint{font-size:11.8px;color:var(--muted);line-height:1.65;margin-top:9px}
+  .hint b{color:var(--dim);font-weight:600}
+
+  /* ---------------- inline sub panel（官方伴奏相减） ---------------- */
+  .subpanel{margin-top:13px;padding:12px 13px;border:1px solid var(--line);
+    border-radius:11px;background:#0b1017}
+  .subhead{display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap}
+  .subhead .seg{margin-bottom:0}
+  .subhead .btn{margin-left:auto}
+  .subpanel .hint{margin-top:8px}
+
+  /* ---------------- inputs ---------------- */
+  input[type=text],input[type=number],select{
+    background:#0c1119;border:1px solid var(--line);color:var(--text);border-radius:9px;
+    padding:9px 11px;font-size:13px;outline:none;font-family:inherit;transition:border-color .15s}
+  input[type=text]:focus,select:focus{border-color:#3d5a8c}
+  input:disabled,select:disabled{opacity:.55;cursor:not-allowed}
+  select{max-width:300px}
+  input[type=text]{width:100%}
+  .inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .inline input[type=text]{flex:1;min-width:210px}
+  .seg{display:inline-flex;gap:2px;background:#0b1017;border:1px solid var(--line);
+    border-radius:10px;padding:3px;margin-bottom:11px}
+  .seg button{padding:6px 15px;border-radius:8px;color:var(--dim);font-size:12.5px}
+  .seg button.on{background:#1c2637;color:var(--text);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+
+  .drop{border:1.5px dashed #2b3a55;border-radius:12px;background:#0b1017;padding:20px 16px;
+    text-align:center;color:var(--dim);font-size:13px;cursor:pointer;transition:.17s}
+  .drop b{color:var(--text);font-weight:600}
+  .drop span{display:block;color:var(--muted);font-size:11.5px;margin-top:4px}
+  .drop:hover,.drop.hover{border-color:var(--accent);background:#0e1623;color:var(--text)}
+  .drop.disabled{opacity:.45;pointer-events:none}
+  .drop.compact{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:10px;text-align:left}
+  .drop.compact span{margin:0}
+
+  .controls{display:flex;flex-wrap:wrap;gap:9px 16px;align-items:center}
+  .field{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--dim)}
+  .field select{max-width:280px}
+  .chk{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--dim);cursor:pointer;user-select:none}
+  .chk input{accent-color:#5b8cff;width:15px;height:15px}
+
+  .pitchwrap{display:inline-flex;align-items:center;background:#0c1119;border:1px solid var(--line);
+    border-radius:9px;padding-right:8px;transition:border-color .15s}
+  .pitchwrap:focus-within{border-color:#3d5a8c}
+  .pitchwrap input{width:56px;border:0;background:transparent;padding:8px 2px 8px 10px;
+    text-align:right;font-size:13px;color:var(--text);outline:none}
+  .pitchunit{font-size:11px;color:var(--muted)}
+  .pitchquick{display:inline-flex;gap:4px;margin-left:2px}
+  .mini{font-size:11px;padding:4px 7px;border-radius:7px;border:1px solid var(--line);
+    background:#111823;color:var(--dim)}
+  .mini:hover{border-color:var(--line2);color:var(--text)}
+
+  /* ---------------- job / progress ---------------- */
+  .job{margin-top:13px;background:#0b1017;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  .job.err{border-color:#4a2830;background:rgba(255,107,122,.035)}
+  .track{height:6px;border-radius:99px;background:#161d28;overflow:hidden;margin-bottom:7px}
+  .track i{display:block;height:100%;width:0;border-radius:99px;
+    background:linear-gradient(90deg,#4470dd,#7a6bff);transition:width .45s;position:relative;overflow:hidden}
+  .step.running .track i::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.32),transparent);animation:shine 1.5s infinite}
+  @keyframes shine{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+  .jmsg{font-size:12.5px;color:var(--dim);word-break:break-word}
+  .jmsg.err{color:#ffb3bb}
+  .jmeta{font-size:11.5px;color:var(--muted)}
+
+  /* ---------------- products ---------------- */
+  .products{margin-top:14px;padding-top:14px;border-top:1px dashed #212a38;display:flex;flex-direction:column;gap:9px}
+  .product{background:#0b1017;border:1px solid #1d2634;border-radius:11px;padding:9px 11px}
+  .phead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px}
+  .pname{font-size:12.5px;font-weight:600;color:#dde7f5}
+  .pnote{font-size:11px;color:var(--muted)}
+  .pmeta{font-size:11px;color:var(--muted);margin-left:auto}
+  .product audio{display:none}
+  .player{display:flex;align-items:center;gap:10px;margin-top:1px}
+  .playbtn{width:31px;height:31px;flex:0 0 31px;border-radius:50%;display:grid;place-items:center;
+    background:#17243a;border:1px solid #2c3e5c;color:#cfe0ff;font-size:10px;line-height:1;
+    transition:.15s;padding:0}
+  .playbtn:hover{background:#1e3150;border-color:#3d5a8c}
+  .player.playing .playbtn{background:linear-gradient(135deg,#4a78ea,#6c5ce7);border-color:transparent;color:#fff}
+  .seek{-webkit-appearance:none;appearance:none;flex:1;min-width:60px;height:5px;border-radius:99px;
+    background:linear-gradient(90deg,#5b8cff 0%,#1c2736 0%);outline:none;cursor:pointer;margin:0}
+  .seek::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;
+    background:#cfe0ff;border:0;box-shadow:0 0 0 3px rgba(110,168,254,.16)}
+  .seek::-moz-range-thumb{width:11px;height:11px;border-radius:50%;background:#cfe0ff;border:0}
+  .ptime{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:34px;text-align:center}
+  .ptime.total{color:var(--dim)}
+  .product.compact{display:flex;align-items:center;gap:12px;padding:8px 11px}
+  .product.compact .phead{margin:0;flex:1}
+  .save{border:1px solid #2b3a55;background:#141f2f;color:#b7cdf2;font-size:11.5px;
+    padding:5px 10px;border-radius:8px;white-space:nowrap}
+  .save:hover{background:#192a41;border-color:#3b5680}
+
+  /* ---------------- history ---------------- */
+  .card-block{padding:18px 20px;margin-top:16px}
+  .cardhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+  .cardhead h3{margin:0;font-size:14px;font-weight:600}
+  .history-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-top:1px solid #1a2230;font-size:13px}
+  .history-row:first-child{border-top:0}
+  .hdot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:0 0 7px}
+  .history-row.done .hdot{background:var(--ok)}
+  .history-row.running .hdot{background:var(--accent);animation:blink 1.2s infinite}
+  .history-row.error .hdot{background:var(--err)}
+  .history-row.partial .hdot{background:var(--warn)}
+  .htitle{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hmeta{font-size:11.5px;color:var(--muted);white-space:nowrap}
+  @media(max-width:700px){.hmeta.when{display:none}}
+
+  /* ---------------- training ---------------- */
+  .train-grid{display:grid;grid-template-columns:1.32fr .88fr;gap:16px;align-items:start}
+  .train-grid .card-block{margin-top:0}
+  .formgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;margin-top:14px}
+  .formgrid .field{display:flex;flex-direction:column;align-items:stretch;gap:6px;font-size:12px}
+  .formgrid .field select,.formgrid .field input{width:100%;max-width:none}
+  .cspan{grid-column:1/-1}
+  .checkline{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--dim)}
+  #trainProgress{margin-top:14px}
+  .resultbox{margin-top:12px;padding:10px 12px;border-radius:10px;font-size:12.5px;
+    background:rgba(61,220,151,.06);border:1px solid rgba(61,220,151,.25);color:#a9f0cf;line-height:1.7}
+  .modelrow{padding:10px 0;border-top:1px solid #1a2230}
+  .modelrow:first-child{border-top:0}
+  .mtop{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .mname{font-weight:600;font-size:13px}
+  .mmeta{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.5;word-break:break-word}
+  .mact{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+  .notes{font-size:12.5px;color:var(--dim);line-height:1.8}
+  .notes b{color:var(--text)}
+  .notes code{background:#0b1017;border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:11.5px}
+
+  /* ---------------- toast / footer ---------------- */
+  #toasts{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:100;
+    display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:min(520px,92vw)}
+  .toast{background:#16202e;border:1px solid #2b3c55;border-radius:10px;padding:9px 16px;font-size:12.5px;
+    box-shadow:0 14px 40px -12px rgba(0,0,0,.7);animation:toastin .22s ease-out;max-width:100%;word-break:break-word}
+  .toast.ok{border-color:rgba(61,220,151,.35);color:#abf3d0}
+  .toast.err{border-color:rgba(255,107,122,.4);color:#ffb9c1}
+  @keyframes toastin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .footer{text-align:center;color:#4d5a6d;font-size:11.5px;margin-top:26px}
+
+  @media(max-width:900px){
+    .train-grid{grid-template-columns:1fr}
+  }
+  @media(max-width:760px){
+    .topbar-inner{padding:9px 13px;gap:10px}
+    .brand{font-size:0;gap:0}
+    .logo{width:30px;height:30px}
+    .nav button{padding:7px 13px}
+    .top-actions .btn span.long{display:none}
+    .container{padding:16px 13px 60px}
+    .sessionbar{flex-wrap:wrap;gap:8px 10px}
+    .sbtitle{max-width:100%}
+    .sbact{width:100%;justify-content:flex-start}
+    .step{grid-template-columns:30px minmax(0,1fr);gap:9px}
+    .rail{padding-top:15px}
+    .num{width:28px;height:28px;flex-basis:28px;font-size:12px}
+    .step-card{padding:14px}
+    .pmeta{margin-left:0}
+    .product.compact{flex-wrap:wrap}
+    .formgrid{grid-template-columns:1fr}
+    .pagehead h1{font-size:21px}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="logo">♪</span><span class="name">浮声</span></div>
+    <nav class="nav">
+      <button id="tabCover" class="on">翻唱<span class="tabdot"></span></button>
+      <button id="tabTrain">训练模型<span class="tabdot"></span></button>
+    </nav>
+    <div class="top-actions">
+      <button class="btn ghost small" id="btnNew">＋ <span class="long">新建任务</span></button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- ============================================================ 翻唱 -->
+  <section id="page-cover">
+    <div class="pagehead">
+      <div class="eyebrow">Cover Studio</div>
+      <h1>翻唱</h1>
+      <p>每一步都会留下可播放、可另存为的产物；先试听，满意了再继续下一步。</p>
+    </div>
+
+    <div class="sessionbar">
+      <div class="sbleft">
+        <div class="sbtitle" id="sbTitle" title="双击标题可以重命名">未命名任务</div>
+        <div class="sbmeta" id="sbMeta">新建任务</div>
+        <div class="sbloc" id="sbPath"></div>
+      </div>
+      <div class="sbact">
+        <button class="btn ghost small" id="btnRename">重命名</button>
+        <button class="btn ghost small" id="btnReveal">打开文件夹</button>
+        <button class="btn ghost small danger" id="btnDelete">删除任务</button>
+        <button class="btn ghost small" id="btnNew2">新建任务</button>
+      </div>
+    </div>
+
+    <div class="steps">
+
+      <!-- 1 源音频 -->
+      <section class="step" id="step-source" data-step="source">
+        <div class="rail"><span class="num">1</span></div>
+        <div class="card step-card">
+          <div class="step-head">
+            <div class="step-title">
+              <h2>获取源音频</h2>
+              <p>上传本地音频，或从 B 站 / 直链下载。下载后会自动提取出 44.1 kHz 音频。</p>
+            </div>
+            <span class="pill" data-pill="source">待开始</span>
+          </div>
+          <div class="step-body">
+            <div class="seg" id="srcMode">
+              <button class="on" data-mode="file">上传本地音频</button>
+              <button data-mode="url">B 站 / 链接</button>
+            </div>
+            <div id="srcPaneFile">
+              <div class="drop" id="dropSource">
+                <b>点击选择</b> 或把音频拖到这里
+                <span>wav / mp3 / m4a / flac / aac / ogg</span>
+              </div>
+              <input type="file" id="fileSource" accept="audio/*" hidden />
+            </div>
+            <div id="srcPaneUrl" hidden>
+              <div class="inline">
+                <input type="text" id="urlSource" placeholder="BV 号 / B 站链接 / 直链 / 其他站点" />
+                <button class="btn primary" id="goSourceUrl">获取音频</button>
+              </div>
+              <div class="hint">B 站会取最高码率音轨；其他站点走 yt-dlp，直链直接下载。</div>
+            </div>
+            <div class="job" data-job="source" hidden></div>
+            <div class="products" data-products="source" hidden></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2 分离 -->
+      <section class="step locked" id="step-sep" data-step="sep">
+        <div class="rail"><span class="num">2</span></div>
+        <div class="card step-card">
+          <div class="step-head">
+            <div class="step-title">
+              <h2>分离人声与伴奏</h2>
+              <p>用 BS-RoFormer 把人声和伴奏分开；如果有同版本的官方伴奏，改用“官方伴奏相减”会干净得多。</p>
+            </div>
+            <span class="pill" data-pill="sep">待解锁</span>
+          </div>
+          <div class="step-body">
+            <div class="controls">
+              <label class="field">分离方式
+                <select id="separator">
+                  <option value="roformer">BS-RoFormer 模型分离</option>
+                  <option value="inst">官方伴奏相减</option>
+                </select>
+              </label>
+              <label class="chk"><input type="checkbox" id="skipSep" /> 源音频已是纯人声，跳过分离</label>
+              <button class="btn primary" id="goSeparate" style="margin-left:auto">开始分离</button>
+            </div>
+
+            <!-- 选“官方伴奏相减”时才展开 -->
+            <div id="instPanel" hidden>
+              <div class="subpanel">
+                <div class="subhead">
+                  <div class="seg" id="instMode">
+                    <button class="on" data-mode="file">上传本地音频</button>
+                    <button data-mode="url">BV 号 / 链接</button>
+                  </div>
+                  <button class="btn ghost small" id="clearInst" hidden>清除伴奏</button>
+                </div>
+                <div id="instPaneFile">
+                  <div class="drop compact" id="dropInst">＋ 选择官方伴奏文件</div>
+                  <input type="file" id="fileInst" accept="audio/*" hidden />
+                </div>
+                <div id="instPaneUrl" hidden>
+                  <div class="inline">
+                    <input type="text" id="urlInst" placeholder="BV 号 / B 站链接 / 直链" />
+                    <button class="btn primary" id="goInstUrl">获取伴奏</button>
+                  </div>
+                  <div class="hint">B 站会取最高码率音轨；其他站点走 yt-dlp，直链直接下载。拿到后可以「另存为」留档。</div>
+                </div>
+              </div>
+              <div class="hint" id="instHint"></div>
+              <div class="job" data-job="inst" hidden></div>
+              <div class="products" data-products="inst" hidden></div>
+            </div>
+
+            <div class="hint" id="sepHint"></div>
+            <div class="hint" id="sepDiag" hidden></div>
+            <div class="job" data-job="sep" hidden></div>
+            <div class="products" data-products="sep" hidden></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3 换音色 -->
+      <section class="step locked" id="step-conv" data-step="conv">
+        <div class="rail"><span class="num">3</span></div>
+        <div class="card step-card">
+          <div class="step-head">
+            <div class="step-title">
+              <h2>换音色</h2>
+              <p>用训练好的模型把人声换成目标音色。可以反复换不同模型 / 不同变调，直到满意。</p>
+            </div>
+            <span class="pill" data-pill="conv">待解锁</span>
+          </div>
+          <div class="step-body">
+            <div class="controls">
+              <label class="field">音色模型 <select id="model"></select></label>
+              <label class="field">变调
+                <span class="pitchwrap">
+                  <input type="number" id="pitch" min="-24" max="24" step="1" value="0"
+                         inputmode="numeric" aria-label="变调半音数" />
+                  <span class="pitchunit">半音</span>
+                </span>
+                <span class="pitchquick" title="常用值">
+                  <button type="button" class="mini" data-pitch="0">0</button>
+                  <button type="button" class="mini" data-pitch="10">+10</button>
+                  <button type="button" class="mini" data-pitch="12">+12</button>
+                </span>
+              </label>
+              <button class="btn primary" id="goConvert" style="margin-left:auto">开始换音色</button>
+            </div>
+            <div class="hint" id="convHint"></div>
+            <div class="job" data-job="conv" hidden></div>
+            <div class="products" data-products="conv" hidden></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4 混音 -->
+      <section class="step locked" id="step-mix" data-step="mix">
+        <div class="rail"><span class="num">4</span></div>
+        <div class="card step-card">
+          <div class="step-head">
+            <div class="step-title">
+              <h2>混合与母带</h2>
+              <p>把换声后的人声与伴奏合在一起，做电平匹配、限幅和响度母带，输出成品。</p>
+            </div>
+            <span class="pill" data-pill="mix">待解锁</span>
+          </div>
+          <div class="step-body">
+            <div class="controls">
+              <button class="btn primary" id="goMix">混合并母带</button>
+            </div>
+            <div class="hint" id="mixHint"></div>
+            <div class="job" data-job="mix" hidden></div>
+            <div class="products" data-products="mix" hidden></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 最近任务 -->
+    <div class="card card-block" id="historyCard">
+      <div class="cardhead">
+        <h3>最近任务</h3>
+        <button class="btn ghost small" id="refreshHistory">刷新</button>
+      </div>
+      <div id="historyList"></div>
+    </div>
+
+    <div class="footer">所有音频都在本机处理 · 产物保存在 <code>webapp/sessions/&lt;任务ID&gt;/</code></div>
+  </section>
+
+  <!-- ============================================================ 训练 -->
+  <section id="page-train" hidden>
+    <div class="pagehead">
+      <div class="eyebrow">Voice Training</div>
+      <h1>训练模型</h1>
+      <p>上传目标说话人的干声，训练成可以在「翻唱」页使用的 RVC 音色模型。</p>
+    </div>
+
+    <div class="train-grid">
+      <div class="card card-block">
+        <div class="cardhead"><h3>新建音色</h3><span class="tag warm">占用显卡</span></div>
+        <div class="drop" id="dropTrain">
+          <b>点击选择干声文件</b>（可多选）或拖到这里
+          <span>wav / mp3 / m4a / flac · 越多越好，10 分钟以上明显更好</span>
+        </div>
+        <input type="file" id="trainFiles" accept="audio/*" multiple hidden />
+        <div class="hint" id="trainNames">还没有选择文件</div>
+
+        <div class="formgrid">
+          <label class="field cspan">模型名
+            <input type="text" id="modelName" placeholder="例如 voice_b（字母 / 数字 / 下划线，2~32 位）" />
+          </label>
+          <label class="field">轮数
+            <select id="epochs">
+              <option value="60">60（快，约 10 分钟）</option>
+              <option value="120" selected>120（推荐，约 20 分钟）</option>
+              <option value="200">200（约 35 分钟）</option>
+              <option value="300">300（约 50 分钟）</option>
+            </select>
+          </label>
+          <label class="field">batch
+            <select id="batch">
+              <option>2</option>
+              <option selected>4</option>
+              <option>8</option>
+            </select>
+          </label>
+          <label class="checkline cspan" title="训练结束后自动 shutdown /s /f /t 120">
+            <input type="checkbox" id="shutdownAfter" /> 训练完自动关机
+          </label>
+        </div>
+
+        <div class="controls" style="margin-top:14px">
+          <button class="btn primary" id="trainBtn">开始训练</button>
+          <span class="hint" style="margin:0">训练期间转换任务会排队，等显卡空闲。</span>
+        </div>
+
+        <div id="trainProgress" hidden>
+          <div class="track"><i id="trainBar"></i></div>
+          <div class="jmsg" id="trainMsg"></div>
+          <div style="margin-top:9px"><button class="btn ghost small" id="cancelTrain">取消训练</button></div>
+        </div>
+        <div id="trainResult" class="resultbox" hidden></div>
+      </div>
+
+      <div class="card card-block">
+        <div class="cardhead">
+          <h3>已有模型</h3>
+          <button class="btn ghost small" id="refreshModels">刷新</button>
+        </div>
+        <div id="modelList"></div>
+      </div>
+    </div>
+
+    <div class="card card-block notes" style="margin-top:16px">
+      <b>素材建议</b>：同一个人的干声（无伴奏、无混响、无人声以外的噪声），同一录音环境最稳。
+      跑调、不跟拍都不影响训练 —— f0 只是输入条件，不是学习目标。<br />
+      <b>训练完自动关机</b>：勾选后训练成功会执行 <code>shutdown /s /f /t 120</code>。
+      不需要管理员权限，也不会弹 UAC；有 120 秒缓冲，页面会出现「取消关机」链接。
+      <code>/f</code> 会强制关闭其他程序（未保存的文档会丢），训练失败或取消时不会关机。
+    </div>
+  </section>
+
+</main>
+
+<div id="toasts"></div>
+
+<script>
+"use strict";
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmtSize = b => {
+  if (!b) return "";
+  if (b >= 1048576) return (b / 1048576).toFixed(1) + " MB";
+  if (b >= 1024) return Math.round(b / 1024) + " KB";
+  return b + " B";
+};
+const fmtDur = sec => {
+  if (sec == null || sec === "") return "";
+  sec = Math.max(0, Math.round(Number(sec) || 0));
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  return h ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+           : `${m}:${String(s).padStart(2, "0")}`;
+};
+const fmtWhen = ts => {
+  if (!ts) return "";
+  const d = new Date(ts * 1000);
+  return d.toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" }) + " " +
+         d.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
+};
+
+const S = {
+  sid: null,
+  session: null,
+  models: [],
+  defaultModel: null,
+  sig: {},
+  optFor: null,
+  pollTimer: null,
+  trainPoll: null,
+  training: null,
+  trainingRunning: false,
+  srcMode: "file",
+  page: "cover",
+  instAuto: false,
+  instMode: "file",
+};
+
+/* ============================================================ 基础 */
+function toast(message, kind = "") {
+  const el = document.createElement("div");
+  el.className = "toast " + kind;
+  el.textContent = message;
+  $("#toasts").appendChild(el);
+  setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .3s"; }, 3200);
+  setTimeout(() => el.remove(), 3700);
+}
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, opts);
+  let j = null;
+  try { j = await r.json(); } catch (_) {}
+  if (!r.ok) {
+    let msg = "请求失败（" + r.status + "）";
+    if (j && j.detail) {
+      msg = Array.isArray(j.detail) ? j.detail.map(x => x.msg || JSON.stringify(x)).join("；") : String(j.detail);
+    }
+    throw new Error(msg);
+  }
+  return j;
+}
+
+function running() {
+  return !!(S.session && S.session.job && S.session.job.status === "running");
+}
+
+function hasDownstream() {
+  const s = S.session;
+  return !!(s && (s.inst || s.sep || s.conv || s.mix));
+}
+
+function hasAnything() {
+  const s = S.session;
+  return !!(s && (s.source || s.inst || s.sep || s.conv || s.mix));
+}
+
+/* ============================================================ 页面切换 */
+function syncUrl(page = S.page) {
+  if (!S.sid) return;
+  const target = "?sid=" + S.sid + "#" + page;
+  if (location.search + location.hash !== target) history.replaceState(null, "", target);
+}
+
+function showPage(page) {
+  S.page = page;
+  $("#page-cover").hidden = page !== "cover";
+  $("#page-train").hidden = page !== "train";
+  $("#tabCover").classList.toggle("on", page === "cover");
+  $("#tabTrain").classList.toggle("on", page === "train");
+  $$("audio").forEach(a => { try { a.pause(); } catch (_) {} });
+  if (location.hash !== "#" + page) {
+    history.replaceState(null, "", location.pathname + location.search + "#" + page);
+  }
+  window.scrollTo(0, 0);
+}
+
+/* ============================================================ 模型 */
+async function loadModels() {
+  const d = await api("/api/models");
+  S.models = d.models || [];
+  S.defaultModel = d.default || null;
+
+  const sel = $("#model");
+  const keep = sel.value;
+  sel.innerHTML = S.models.length
+    ? S.models.map(m => `<option value="${esc(m.name)}">${esc(m.name)}${m.sr ? " · " + esc(m.sr) : ""}${m.default ? " · 默认" : ""}</option>`).join("")
+    : `<option value="">（没有模型，请先到「训练模型」训练）</option>`;
+  if (keep && S.models.some(m => m.name === keep)) sel.value = keep;
+  else if (S.defaultModel && S.models.some(m => m.name === S.defaultModel)) sel.value = S.defaultModel;
+
+  renderModelList();
+}
+
+function renderModelList() {
+  const box = $("#modelList");
+  if (!S.models.length) {
+    box.innerHTML = `<div class="hint">还没有模型。训练完成后会自动出现在这里。</div>`;
+    return;
+  }
+  box.innerHTML = S.models.map(m => `
+    <div class="modelrow">
+      <div class="mtop">
+        <span class="mname">${esc(m.name)}</span>
+        ${m.default ? `<span class="tag on">默认</span>` : ""}
+        <span class="tag">${m.index ? "含检索索引" : "无索引"}</span>
+        ${m.sr ? `<span class="tag">${esc(m.sr)}</span>` : ""}
+      </div>
+      <div class="mmeta">${m.size_mb} MB${m.note ? " · " + esc(m.note) : ""}${m.created ? " · " + esc(m.created) : ""}</div>
+      <div class="mact">
+        <button class="btn ghost small" data-use="${esc(m.name)}">用这个翻唱</button>
+        ${m.default ? "" : `<button class="btn ghost small" data-default="${esc(m.name)}">设为默认</button>`}
+      </div>
+    </div>`).join("");
+}
+
+/* ============================================================ 会话渲染 */
+function applyOptions(s) {
+  const o = s.options || {};
+  const sepSel = $("#separator");
+  let method = o.separator || "roformer";
+  if (![...sepSel.options].some(x => x.value === method)) method = "roformer";
+  sepSel.value = method;
+  $("#skipSep").checked = !!o.skip_sep;
+  const p = parseInt(o.pitch ?? "0", 10);
+  $("#pitch").value = String(Number.isFinite(p) ? Math.max(-24, Math.min(24, p)) : 0);
+  const want = o.model || s.default_model || S.defaultModel;
+  if (want && S.models.some(m => m.name === want)) $("#model").value = want;
+  syncSepMode();
+  updateHints();
+}
+
+function pillText(key, done, locked, isRunning, isError) {
+  if (isRunning) return "进行中";
+  if (isError) return "失败";
+  if (done) return (key === "source" || key === "inst") ? "已就绪" : "完成";
+  if (locked) return "待解锁";
+  if (key === "inst") return "可选";
+  return "待开始";
+}
+
+function renderProducts(key, artifacts) {
+  const box = $(`[data-products="${key}"]`);
+  if (!box) return;
+  const sig = JSON.stringify(artifacts || []);
+  if (S.sig[key] === sig) return;
+  S.sig[key] = sig;
+  box.innerHTML = (artifacts || []).map(productHTML).join("");
+  box.hidden = !(artifacts && artifacts.length);
+  if (artifacts && artifacts.length) initPlayers(box);
+}
+
+function productHTML(a) {
+  const meta = [String(a.ext || "").toUpperCase(), a.dur ? fmtDur(a.dur) : "", a.size ? fmtSize(a.size) : ""]
+    .filter(Boolean).join(" · ");
+  const name = esc(a.save_name || "audio");
+  if (a.playable) {
+    return `<div class="product">
+      <div class="phead">
+        <span class="pname">${esc(a.label)}</span>
+        ${a.note ? `<span class="pnote">${esc(a.note)}</span>` : ""}
+        <span class="pmeta">${esc(meta)}</span>
+        <button class="save" data-url="${esc(a.url)}" data-name="${name}">另存为</button>
+      </div>
+      <div class="player">
+        <button class="playbtn" type="button" aria-label="播放">▶</button>
+        <input class="seek" type="range" min="0" max="1000" step="1" value="0" aria-label="播放进度" />
+        <span class="ptime cur">0:00</span>
+        <span class="ptime total">${esc(fmtDur(a.dur) || "0:00")}</span>
+        <audio preload="metadata" src="${esc(a.url)}"></audio>
+      </div>
+    </div>`;
+  }
+  return `<div class="product compact">
+    <div class="phead">
+      <span class="pname">${esc(a.label)}</span>
+      ${a.note ? `<span class="pnote">${esc(a.note)}</span>` : ""}
+      <span class="pmeta">${esc(meta)}</span>
+    </div>
+    <button class="save" data-url="${esc(a.url)}" data-name="${name}">另存为</button>
+  </div>`;
+}
+
+function initPlayers(box) {
+  $$(".player", box).forEach(player => {
+    const audio = $("audio", player);
+    const btn = $(".playbtn", player);
+    const seek = $(".seek", player);
+    const cur = $(".cur", player);
+    const total = $(".total", player);
+    if (!audio || !btn || !seek || !cur || !total) return;
+
+    const duration = () => (Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 0);
+    const paint = () => {
+      const d = duration();
+      const ms = d ? Math.min(1000, Math.round((audio.currentTime / d) * 1000)) : 0;
+      seek.value = String(ms);
+      seek.style.background = `linear-gradient(90deg,#5b8cff ${ms / 10}%,#1c2736 ${ms / 10}%)`;
+      cur.textContent = fmtDur(audio.currentTime) || "0:00";
+    };
+
+    audio.addEventListener("loadedmetadata", () => {
+      if (duration()) total.textContent = fmtDur(audio.duration);
+      paint();
+    });
+    audio.addEventListener("timeupdate", paint);
+    audio.addEventListener("play", () => {
+      $$("audio").forEach(a => { if (a !== audio && !a.paused) a.pause(); });
+      player.classList.add("playing");
+      btn.textContent = "❚❚";
+      btn.setAttribute("aria-label", "暂停");
+    });
+    audio.addEventListener("pause", () => {
+      player.classList.remove("playing");
+      btn.textContent = "▶";
+      btn.setAttribute("aria-label", "播放");
+    });
+    audio.addEventListener("ended", () => {
+      player.classList.remove("playing");
+      btn.textContent = "▶";
+      audio.currentTime = 0;
+      paint();
+    });
+
+    btn.onclick = () => {
+      if (audio.paused) audio.play().catch(e => toast("无法播放：" + e.message, "err"));
+      else audio.pause();
+    };
+    seek.oninput = () => {
+      const d = duration();
+      if (d) audio.currentTime = (Number(seek.value) / 1000) * d;
+      paint();
+    };
+    paint();
+  });
+}
+
+function syncInstPanel() {
+  const upload = S.instMode !== "url";
+  const busy = running();
+  const hasSource = !!S.session?.source;
+  $("#instPaneFile").hidden = !upload;
+  $("#instPaneUrl").hidden = upload;
+  $$("#instMode button").forEach(b => b.classList.toggle("on", (b.dataset.mode === "url") === !upload));
+  $("#dropInst").classList.toggle("disabled", busy || !hasSource);
+  $("#fileInst").disabled = busy || !hasSource;
+  $("#urlInst").disabled = busy || !hasSource;
+  $("#goInstUrl").disabled = busy || !hasSource;
+  $("#goInstUrl").textContent = S.session?.inst ? "重新获取" : "获取伴奏";
+  $("#clearInst").hidden = !S.session?.inst || busy;
+  $("#clearInst").disabled = busy;
+}
+
+function syncSepMode() {
+  const s = S.session;
+  const skip = $("#skipSep").checked;
+  const sepSel = $("#separator");
+  const isInst = sepSel.value === "inst";
+  const busy = running();
+  sepSel.disabled = skip || busy;
+  $("#skipSep").disabled = busy || !s?.source;
+  $("#instPanel").hidden = skip || !isInst;
+  $("#goSeparate").hidden = skip;
+  $("#goSeparate").disabled = busy || !s?.source || (isInst && !s?.inst);
+  $("#goSeparate").textContent = s?.sep ? "重新分离" : "开始分离";
+  syncInstPanel();
+  updateHints();
+}
+
+function updateHints() {
+  const s = S.session;
+  if (!s) return;
+  const skip = $("#skipSep").checked;
+  const m = $("#separator").value;
+
+  let sepText;
+  if (skip) {
+    sepText = s.inst
+      ? "跳过分离：人声直接使用源音频，伴奏用你提供的官方伴奏，混合时按整体电平自动匹配。"
+      : "跳过分离：成品只包含换声后的人声（没有伴奏）。";
+  } else if (m === "inst") {
+    sepText = s.inst
+      ? "人声 = 原曲 − 官方伴奏。两份必须是同一版本，否则会留残渣。"
+      : "先在下面放入官方伴奏（上传文件，或贴 BV 号 / 链接），再点「开始分离」。";
+  } else {
+    sepText = "BS-RoFormer 把整首歌拆成人声和伴奏；有同版本官方伴奏时，改用「官方伴奏相减」会更干净。";
+  }
+  $("#sepHint").textContent = sepText;
+
+  const instHint = $("#instHint");
+  if (instHint) {
+    instHint.textContent = s.inst
+      ? `已就绪 · ${fmtDur(s.inst.dur) || "已获取"} · 混音会直接使用这一份伴奏`
+      : "官方伴奏要和原曲是同一版本，相减时按音频内容自动对齐；拿到音频后可以「另存为」留档。";
+  }
+
+  let convText;
+  if (!S.models.length) {
+    convText = "还没有可用模型，请先到顶部「训练模型」页训练一个。";
+  } else if (s.conv) {
+    convText = `上一次：${s.conv.model} · ${Number(s.conv.pitch) > 0 ? "+" : ""}${s.conv.pitch} 半音。可以换模型或换变调再试。`;
+  } else {
+    convText = "换音色会同时改变音色与音高；男声唱女声音色时，一般 +10 ~ +12 半音。";
+  }
+  convText += " 变调可以直接输入 -24 ~ +24 的整数。";
+  $("#convHint").textContent = convText;
+
+  let mixText;
+  if (!s.sep) {
+    mixText = "完成上一步后，这里会把换声人声和伴奏合在一起。";
+  } else if (s.sep.skipped && !s.inst) {
+    mixText = "没有伴奏：只对换声后的人声做母带，输出成品。";
+  } else if (s.sep.skipped && s.inst) {
+    mixText = "把换声人声和你提供的官方伴奏叠加。两份文件需要起点一致（不会自动对齐）。";
+  } else {
+    mixText = "把换声人声和分离出的伴奏混合，按原唱的音量包络做电平匹配，再统一母带。";
+  }
+  $("#mixHint").textContent = mixText;
+}
+
+function paintStep(key, done, locked, s) {
+  const el = $(`#step-${key}`);
+  const job = s.job || {};
+  const mine = job.key === key;
+  const isRunning = mine && job.status === "running";
+  const isError = mine && job.status === "error";
+
+  if (el) {
+    el.classList.toggle("done", !!done);
+    el.classList.toggle("locked", !!locked);
+    el.classList.toggle("running", !!isRunning);
+    el.classList.toggle("error", !!isError);
+  }
+
+  const pill = $(`[data-pill="${key}"]`);
+  if (pill) pill.textContent = pillText(key, done, locked, isRunning, isError);
+
+  const jp = $(`[data-job="${key}"]`);
+  if (!jp) return;
+  if (!isRunning && !isError) {
+    jp.hidden = true;
+    jp.innerHTML = "";
+    return;
+  }
+  jp.hidden = false;
+  const pct = isRunning ? Math.max(2, Math.min(99, Number(job.progress) || 0)) : 0;
+  const started = isRunning && job.started ? `data-start="${job.started}"` : "";
+  jp.className = "job" + (isError ? " err" : "");
+  jp.innerHTML = `<div class="track"><i style="width:${pct}%"></i></div>
+    <div class="jmsg ${isError ? "err" : ""}">${esc(job.message || (isRunning ? "处理中…" : "失败"))}
+      <span class="jmeta" ${started}></span></div>`;
+}
+
+function renderSession(s) {
+  if (!s) return;
+  const prev = S.session;
+  S.session = s;
+
+  const isRunning = !!(s.job && s.job.status === "running");
+  $("#tabCover").classList.toggle("busy", isRunning);
+  $("#tabTrain").classList.toggle("busy", S.trainingRunning);
+
+  $("#sbTitle").textContent = s.title || "未命名任务";
+  const bits = [];
+  if (s.source?.dur) bits.push("源音频 " + fmtDur(s.source.dur));
+  if (s.inst) bits.push("官方伴奏");
+  if (isRunning) bits.push("处理中…");
+  else if (s.mix) bits.push("已完成");
+  else if (s.conv) bits.push("待混音");
+  else if (s.sep) bits.push("待换音色");
+  else if (s.source) bits.push("待分离");
+  else bits.push("新建");
+  $("#sbMeta").textContent = bits.join(" · ");
+  $("#sbPath").textContent = s.dir_rel ? "任务目录：" + s.dir_rel : "";
+  $("#sbPath").title = s.dir ? "完整路径：" + s.dir : "";
+
+  if (S.optFor !== s.id) {
+    applyOptions(s);
+    S.optFor = s.id;
+  }
+
+  /* 刚提供官方伴奏、还没分离时，默认推荐“官方伴奏相减” */
+  if (!s.inst) {
+    S.instAuto = false;
+  } else if (!s.sep && !S.instAuto) {
+    if ($("#separator").value === "roformer") $("#separator").value = "inst";
+    S.instAuto = true;
+  }
+
+  const done = {
+    source: !!s.source, inst: !!s.inst, sep: !!s.sep, conv: !!s.conv, mix: !!s.mix,
+  };
+  const locked = {
+    source: false, inst: !done.source, sep: !done.source, conv: !done.sep, mix: !done.conv,
+  };
+  for (const k of ["source", "inst", "sep", "conv", "mix"]) {
+    paintStep(k, done[k], locked[k], s);
+    renderProducts(k, s[k]?.artifacts || []);
+  }
+
+  /* 官方伴奏相减的诊断：延时/音量补偿/版本自检 */
+  const diagEl = $("#sepDiag");
+  if (diagEl) {
+    const diag = (s.sep && s.sep.diag) || null;
+    diagEl.hidden = !diag;
+    diagEl.textContent = diag ? diag.text : "";
+    diagEl.style.color = diag && diag.same_version === false ? "#ff8a8a" : "";
+  }
+
+  /* 控件可用性：只锁“执行”按钮，参数可以提前选 */
+  $("#goSourceUrl").disabled = isRunning;
+  $("#urlSource").disabled = isRunning;
+  $("#goConvert").disabled = isRunning || locked.conv || !S.models.length;
+  $("#goMix").disabled = isRunning || locked.mix;
+  $("#fileSource").disabled = isRunning;
+  $("#dropSource").classList.toggle("disabled", isRunning);
+  $("#model").disabled = isRunning || !S.models.length;
+  $("#pitch").disabled = isRunning;
+  $("#btnDelete").disabled = isRunning;
+  $("#btnDelete").title = isRunning ? "任务正在处理，完成后才能删除" : "删除这个任务和它的全部音频文件";
+
+  $("#goConvert").title = !s.sep ? "先完成分离（或勾选“源是纯人声”跳过）" :
+    (!S.models.length ? "先到「训练模型」页训练一个模型" : "");
+  $("#goMix").title = !s.conv ? "先完成换音色" : "";
+
+  $("#goConvert").textContent = done.conv ? "重新换音色" : "开始换音色";
+  $("#goMix").textContent = done.mix ? "重新混合" : "混合并母带";
+  $("#goSourceUrl").textContent = done.source ? "重新获取音频" : "获取音频";
+
+  const srcDrop = $("#dropSource");
+  if (done.source) {
+    srcDrop.innerHTML = `<b>重新选择文件</b> 或拖到这里<span>会清空官方伴奏、分离、换音色和成品</span>`;
+  } else {
+    srcDrop.innerHTML = `<b>点击选择</b> 或把音频拖到这里<span>wav / mp3 / m4a / flac / aac / ogg</span>`;
+  }
+  $("#dropInst").textContent = done.inst ? "＋ 更换官方伴奏" : "＋ 选择官方伴奏文件";
+
+  syncSepMode();
+  updateHints();
+
+  if (prev && prev.job && prev.job.status === "running" && s.job) {
+    if (s.job.status === "done") toast(s.job.message || "完成", "ok");
+    else if (s.job.status === "error") toast(s.job.message || "失败", "err");
+  }
+}
+
+/* ============================================================ 轮询 */
+function schedulePoll(delay = 900) {
+  if (S.pollTimer) clearTimeout(S.pollTimer);
+  S.pollTimer = setTimeout(pollSession, delay);
+}
+
+async function pollSession() {
+  S.pollTimer = null;
+  if (!S.sid) return;
+  try {
+    const s = await api("/api/sessions/" + S.sid);
+    renderSession(s);
+    if (s.job && s.job.status === "running") schedulePoll(900);
+    else loadHistory();
+  } catch (e) {
+    schedulePoll(2500);
+  }
+}
+
+async function refresh() {
+  const s = await api("/api/sessions/" + S.sid);
+  renderSession(s);
+  if (s.job && s.job.status === "running") schedulePoll(700);
+  return s;
+}
+
+/* ============================================================ 提交阶段 */
+async function startStage(path, body, label) {
+  try {
+    toast(label, "");
+    await api(`/api/sessions/${S.sid}/${path}`, { method: "POST", body });
+    await refresh();
+  } catch (e) {
+    toast(e.message, "err");
+    try { await refresh(); } catch (_) {}
+  }
+}
+
+/* ============================================================ 保存 */
+function anchorDownload(url, filename) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  toast("已开始下载：" + filename, "ok");
+}
+
+async function saveAs(url, filename) {
+  try {
+    if (window.showSaveFilePicker) {
+      const ext = ("." + (filename.split(".").pop() || "wav")).toLowerCase();
+      const mime = {
+        ".wav": "audio/wav", ".mp3": "audio/mpeg", ".m4a": "audio/mp4",
+        ".flac": "audio/flac", ".ogg": "audio/ogg", ".aac": "audio/aac",
+        ".webm": "audio/webm", ".opus": "audio/ogg",
+      }[ext] || "application/octet-stream";
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{ description: "文件", accept: { [mime]: [ext] } }],
+      });
+      const r = await fetch(url);
+      if (!r.ok) throw new Error("读取文件失败");
+      const w = await handle.createWritable();
+      await w.write(await r.blob());
+      await w.close();
+      toast("已另存为：" + handle.name, "ok");
+      return;
+    }
+    anchorDownload(url, filename);
+  } catch (e) {
+    if (e && e.name === "AbortError") return;
+    anchorDownload(url, filename);
+  }
+}
+
+/* ============================================================ 历史 */
+async function loadHistory() {
+  try {
+    const list = await api("/api/sessions?limit=10");
+    if (!list.length) {
+      $("#historyList").innerHTML = `<div class="hint">还没有任务。获取一首歌就会自动建立任务。</div>`;
+      return;
+    }
+    $("#historyList").innerHTML = list.map(j => `
+      <div class="history-row ${j.state}">
+        <span class="hdot"></span>
+        <span class="htitle" title="${esc(j.title)}">${esc(j.title)}${j.id === S.sid ? ' <span class="tag on">当前</span>' : ""}</span>
+        <span class="hmeta">${esc(j.label)}</span>
+        <span class="hmeta when">${fmtWhen(j.updated)}</span>
+        <button class="btn ghost small danger" data-del="${j.id}" data-title="${esc(j.title)}" title="删除任务及全部文件">删除</button>
+        <button class="btn ghost small" data-open="${j.id}">打开</button>
+      </div>`).join("");
+  } catch (e) {
+    $("#historyList").innerHTML = `<div class="hint">读取失败：${esc(e.message)}</div>`;
+  }
+}
+
+async function openSession(sid) {
+  if (!sid || sid === S.sid) { showPage("cover"); return; }
+  try {
+    cancelRename();
+    if (S.pollTimer) { clearTimeout(S.pollTimer); S.pollTimer = null; }
+    const s = await api("/api/sessions/" + sid);
+    S.sid = sid;
+    localStorage.setItem("cover.sid", sid);
+    S.sig = {};
+    S.optFor = null;
+    S.instAuto = false;
+    S.session = null;
+    await loadModels();
+    renderSession(s);
+    if (s.job && s.job.status === "running") schedulePoll();
+    loadHistory();
+    showPage("cover");
+    syncUrl("cover");
+    toast("已打开：" + (s.title || "未命名任务"), "ok");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } catch (e) {
+    toast(e.message, "err");
+  }
+}
+
+/* ============================================================ 新建 / 重命名 / 删除 */
+async function newSession() {
+  return createNewSession(false);
+}
+
+async function createNewSession(skipConfirm = false) {
+  if (!skipConfirm && hasAnything() &&
+      !confirm("新建任务会清空当前工作台，旧任务仍会保留在「最近任务」里。继续？")) return;
+  try {
+    cancelRename();
+    const r = await api("/api/sessions", { method: "POST" });
+    S.sid = r.id;
+    localStorage.setItem("cover.sid", r.id);
+    S.sig = {};
+    S.optFor = null;
+    S.instAuto = false;
+    S.session = null;
+    if (S.pollTimer) { clearTimeout(S.pollTimer); S.pollTimer = null; }
+    $("#urlSource").value = "";
+    $("#urlInst").value = "";
+    $("#fileSource").value = "";
+    $("#fileInst").value = "";
+    await loadModels();
+    await refresh();
+    loadHistory();
+    showPage("cover");
+    syncUrl("cover");
+    toast("已新建任务", "ok");
+  } catch (e) {
+    toast(e.message, "err");
+  }
+}
+
+function cancelRename() {
+  const input = $("#titleInput");
+  if (!input) return;
+  input.onblur = null;
+  input.remove();
+  $("#sbTitle").hidden = false;
+}
+
+function startRename() {
+  if (!S.session || !S.sid || $("#titleInput")) return;
+  const titleEl = $("#sbTitle");
+  const input = document.createElement("input");
+  input.type = "text";
+  input.id = "titleInput";
+  input.className = "titleinput";
+  input.maxLength = 80;
+  input.value = S.session.title || "";
+  input.placeholder = "例如：老男孩 · 第一版";
+  titleEl.hidden = true;
+  titleEl.parentNode.insertBefore(input, titleEl);
+  input.focus();
+  input.select();
+
+  let done = false;
+  const finish = async (save) => {
+    if (done) return;
+    done = true;
+    const val = input.value.trim();
+    input.remove();
+    titleEl.hidden = false;
+    if (!save) return;
+    try {
+      const fd = new FormData();
+      fd.append("name", val || "未命名任务");
+      const r = await api(`/api/sessions/${S.sid}/rename`, { method: "POST", body: fd });
+      if (S.session) S.session.title = r.title;
+      titleEl.textContent = r.title;
+      toast("任务已重命名", "ok");
+      loadHistory();
+    } catch (e) {
+      toast(e.message, "err");
+    }
+  };
+  input.onkeydown = e => {
+    if (e.key === "Enter") { e.preventDefault(); finish(true); }
+    else if (e.key === "Escape") { e.preventDefault(); finish(false); }
+  };
+  input.onblur = () => finish(true);
+}
+
+async function revealSession() {
+  if (!S.sid) return;
+  try {
+    await api(`/api/sessions/${S.sid}/reveal`, { method: "POST" });
+    toast("已打开任务文件夹", "ok");
+  } catch (e) {
+    toast(e.message, "err");
+  }
+}
+
+function stopAudio() {
+  $$("audio").forEach(a => {
+    try {
+      a.pause();
+      a.removeAttribute("src");
+      a.load();
+    } catch (_) {}
+  });
+}
+
+async function deleteCurrentSession() {
+  if (!S.sid || !S.session) return;
+  const s = S.session;
+  if ((s.job || {}).status === "running") {
+    return toast("任务正在处理，先等它完成再删除", "err");
+  }
+  const name = s.title || "未命名任务";
+  if (!confirm(`删除任务「${name}」？\n会删除 webapp/sessions/${S.sid}/ 里的全部音频，无法恢复。`)) return;
+  try {
+    stopAudio();
+    await api(`/api/sessions/${S.sid}`, { method: "DELETE" });
+    if (S.pollTimer) { clearTimeout(S.pollTimer); S.pollTimer = null; }
+    toast("任务已删除", "ok");
+    S.session = null;
+    await createNewSession(true);
+  } catch (e) {
+    toast(e.message, "err");
+  }
+}
+
+async function deleteSessionById(sid, title) {
+  if (!sid) return;
+  if (sid === S.sid) return deleteCurrentSession();
+  if (!confirm(`删除任务「${title || "未命名任务"}」？\n会删除 webapp/sessions/${sid}/ 里的全部音频，无法恢复。`)) return;
+  try {
+    await api(`/api/sessions/${sid}`, { method: "DELETE" });
+    toast("任务已删除", "ok");
+    loadHistory();
+  } catch (e) {
+    toast(e.message, "err");
+  }
+}
+
+/* ============================================================ 训练 */
+function onTrainFiles() {
+  const fs = [...$("#trainFiles").files];
+  const mb = fs.reduce((a, f) => a + f.size, 0) / 1048576;
+  $("#trainNames").textContent = fs.length
+    ? `已选择 ${fs.length} 个文件 · ${mb.toFixed(1)} MB`
+    : "还没有选择文件";
+}
+
+async function pollTrain(id) {
+  try {
+    const d = await api("/api/jobs/" + id);
+    S.trainingRunning = d.status === "running";
+    $("#tabTrain").classList.toggle("busy", S.trainingRunning);
+    $("#trainProgress").hidden = false;
+    $("#trainBar").style.width = (d.progress || 0) + "%";
+    $("#trainMsg").className = "jmsg" + (d.status === "error" ? " err" : "");
+    $("#trainMsg").textContent = d.message || "";
+
+    if (d.shutdown_scheduled) {
+      $("#trainMsg").innerHTML = esc(d.message || "") +
+        ' <a href="#" id="undoShutdown" style="color:var(--warn)">取消关机</a>';
+      const u = $("#undoShutdown");
+      if (u) u.onclick = async (e) => {
+        e.preventDefault();
+        const r = await api("/api/shutdown/cancel", { method: "POST" });
+        $("#trainMsg").textContent = (d.message || "") + " · " + (r.message || "");
+      };
+    }
+
+    if (d.status === "running") {
+      $("#trainBtn").disabled = true;
+      S.trainPoll = setTimeout(() => pollTrain(id), 1500);
+      return;
+    }
+
+    S.trainingRunning = false;
+    S.training = null;
+    localStorage.removeItem("cover.trainJob");
+    $("#tabTrain").classList.remove("busy");
+    $("#trainBtn").disabled = false;
+
+    if (d.status === "done") {
+      await loadModels();
+      if (d.result && d.result.model) {
+        $("#model").value = d.result.model;
+        $("#trainResult").hidden = false;
+        $("#trainResult").innerHTML =
+          `<b>${esc(d.result.model)}</b> 已导出 · ${d.result.segments} 段` +
+          `${d.result.size_mb != null ? " · " + d.result.size_mb + " MB" : ""}` +
+          ` · 用时 ${Math.round((d.result.seconds || 0) / 60)} 分钟。现在可以在「翻唱」页选中它。`;
+      }
+      toast("训练完成，模型已加入列表", "ok");
+    } else {
+      toast(d.message || "训练失败", "err");
+    }
+    loadHistory();
+  } catch (e) {
+    S.trainingRunning = false;
+    localStorage.removeItem("cover.trainJob");
+    $("#tabTrain").classList.remove("busy");
+    $("#trainBtn").disabled = false;
+    $("#trainMsg").textContent = e.message;
+    $("#trainMsg").className = "jmsg err";
+  }
+}
+
+async function startTraining() {
+  const fs = [...$("#trainFiles").files];
+  const name = $("#modelName").value.trim();
+  if (!fs.length) return toast("请先选择干声文件", "err");
+  if (!/^[A-Za-z0-9_-]{2,32}$/.test(name)) {
+    return toast("模型名只能用字母/数字/下划线/短横线，2~32 位", "err");
+  }
+
+  const fd = new FormData();
+  fd.append("name", name);
+  fd.append("epochs", $("#epochs").value);
+  fd.append("batch", $("#batch").value);
+  fd.append("shutdown_after", $("#shutdownAfter").checked ? "true" : "false");
+  fs.forEach(f => fd.append("files", f));
+
+  $("#trainBtn").disabled = true;
+  $("#trainResult").hidden = true;
+  $("#trainProgress").hidden = false;
+  $("#trainMsg").textContent = "正在上传素材…";
+  $("#trainMsg").className = "jmsg";
+  $("#trainBar").style.width = "2%";
+
+  try {
+    const r = await api("/api/train", { method: "POST", body: fd });
+    S.training = r.id;
+    S.trainingRunning = true;
+    localStorage.setItem("cover.trainJob", r.id);
+    $("#tabTrain").classList.add("busy");
+    pollTrain(r.id);
+  } catch (e) {
+    $("#trainBtn").disabled = false;
+    $("#trainMsg").textContent = e.message;
+    $("#trainMsg").className = "jmsg err";
+    toast(e.message, "err");
+  }
+}
+
+/* ============================================================ 事件绑定 */
+function bind() {
+  $("#tabCover").onclick = () => showPage("cover");
+  $("#tabTrain").onclick = () => showPage("train");
+  window.addEventListener("hashchange", () => {
+    showPage(location.hash === "#train" ? "train" : "cover");
+  });
+  $("#btnNew").onclick = newSession;
+  $("#btnNew2").onclick = newSession;
+  $("#btnRename").onclick = startRename;
+  $("#sbTitle").ondblclick = startRename;
+  $("#btnReveal").onclick = revealSession;
+  $("#btnDelete").onclick = deleteCurrentSession;
+
+  /* 输入模式 */
+  $$("#srcMode button").forEach(b => {
+    b.onclick = () => {
+      $$("#srcMode button").forEach(x => x.classList.remove("on"));
+      b.classList.add("on");
+      S.srcMode = b.dataset.mode;
+      $("#srcPaneFile").hidden = S.srcMode !== "file";
+      $("#srcPaneUrl").hidden = S.srcMode !== "url";
+    };
+  });
+
+  /* 源音频：上传 */
+  const dropSource = $("#dropSource"), fileSource = $("#fileSource");
+  dropSource.onclick = () => { if (!running()) fileSource.click(); };
+  dropSource.ondragover = e => { e.preventDefault(); if (!running()) dropSource.classList.add("hover"); };
+  dropSource.ondragleave = () => dropSource.classList.remove("hover");
+  dropSource.ondrop = e => {
+    e.preventDefault();
+    dropSource.classList.remove("hover");
+    if (running()) return;
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) uploadSourceFile(f);
+  };
+  fileSource.onchange = () => {
+    const f = fileSource.files[0];
+    if (f) uploadSourceFile(f);
+    fileSource.value = "";
+  };
+
+  $("#goSourceUrl").onclick = async () => {
+    const u = $("#urlSource").value.trim();
+    if (!u) return toast("请粘贴 B 站链接、BV 号或直链", "err");
+    if (hasDownstream() && !confirm("重新获取源音频会清空官方伴奏、分离、换音色和成品。继续？")) return;
+    const fd = new FormData();
+    fd.append("url", u);
+    await startStage("source", fd, "正在获取音频…");
+  };
+
+  /* 官方伴奏 */
+  const dropInst = $("#dropInst"), fileInst = $("#fileInst");
+  dropInst.onclick = () => { if (!running()) fileInst.click(); };
+  dropInst.ondragover = e => { e.preventDefault(); if (!running()) dropInst.classList.add("hover"); };
+  dropInst.ondragleave = () => dropInst.classList.remove("hover");
+  dropInst.ondrop = e => {
+    e.preventDefault();
+    dropInst.classList.remove("hover");
+    if (running()) return;
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) uploadInstFile(f);
+  };
+  fileInst.onchange = () => {
+    const f = fileInst.files[0];
+    if (f) uploadInstFile(f);
+    fileInst.value = "";
+  };
+
+  $("#goInstUrl").onclick = async () => {
+    const u = $("#urlInst").value.trim();
+    if (!u) return toast("请粘贴伴奏链接", "err");
+    if (!S.session?.source) return toast("请先获取源音频", "err");
+    if ((S.session.sep || S.session.conv || S.session.mix) &&
+        !confirm("更换官方伴奏会清空分离、换音色和成品。继续？")) return;
+    const fd = new FormData();
+    fd.append("url", u);
+    S.instAuto = false;
+    await startStage("inst", fd, "正在获取伴奏…");
+  };
+
+  $("#clearInst").onclick = async () => {
+    if (!confirm("清除官方伴奏会同时清空分离、换音色和成品。继续？")) return;
+    try {
+      S.instAuto = false;
+      await api(`/api/sessions/${S.sid}/inst/clear`, { method: "POST" });
+      await refresh();
+      toast("已清除官方伴奏", "ok");
+    } catch (e) { toast(e.message, "err"); }
+  };
+
+  /* 官方伴奏的输入方式：上传本地音频 / BV 号·链接 */
+  $("#instMode").onclick = e => {
+    const b = e.target.closest("button[data-mode]");
+    if (!b) return;
+    S.instMode = b.dataset.mode;
+    syncInstPanel();
+  };
+
+  /* 分离：勾“跳过分离”就直接生效，不用再点“开始分离” */
+  $("#separator").onchange = syncSepMode;
+  $("#skipSep").onchange = async () => {
+    if (!S.session?.source) {
+      $("#skipSep").checked = false;
+      syncSepMode();
+      return toast("请先获取源音频", "err");
+    }
+    if ($("#skipSep").checked) {
+      try {
+        const fd = new FormData();
+        fd.append("method", $("#separator").value);
+        fd.append("skip", "true");
+        await api(`/api/sessions/${S.sid}/separate`, { method: "POST", body: fd });
+        await refresh();
+        toast("已按纯人声处理，可以直接换音色", "ok");
+      } catch (e) {
+        $("#skipSep").checked = false;
+        syncSepMode();
+        toast(e.message, "err");
+      }
+      return;
+    }
+    const sep = S.session?.sep;
+    if (!sep || !sep.skipped) { syncSepMode(); return; }
+    if ((S.session.conv || S.session.mix) &&
+        !confirm("取消跳过会让换音色和成品一起失效，继续？")) {
+      $("#skipSep").checked = true;
+      syncSepMode();
+      return;
+    }
+    try {
+      await api(`/api/sessions/${S.sid}/sep/clear`, { method: "POST" });
+      await refresh();
+      toast("已取消跳过分离，可以重新分离", "ok");
+    } catch (e) {
+      toast(e.message, "err");
+      $("#skipSep").checked = true;
+      syncSepMode();
+    }
+  };
+  $("#goSeparate").onclick = async () => {
+    if (!S.session?.source) return toast("请先获取源音频", "err");
+    const method = $("#separator").value;
+    if (method === "inst" && !S.session.inst) {
+      S.instMode = "file";
+      syncInstPanel();
+      return toast("先放入官方伴奏，再开始分离", "err");
+    }
+    const fd = new FormData();
+    fd.append("method", method);
+    fd.append("skip", "false");
+    if ((S.session.conv || S.session.mix) &&
+        !confirm("重新分离会清空换音色和成品。继续？")) return;
+    await startStage("separate", fd, method === "inst" ? "正在用官方伴奏相减…" : "正在分离…");
+  };
+
+  /* 换音色 */
+  $("#goConvert").onclick = async () => {
+    if (!S.session?.sep) return toast("请先完成分离", "err");
+    if (!S.models.length) return toast("还没有模型，请先到「训练模型」页训练", "err");
+    let pitch = parseInt($("#pitch").value, 10);
+    if (!Number.isFinite(pitch)) pitch = 0;
+    pitch = Math.max(-24, Math.min(24, pitch));
+    $("#pitch").value = String(pitch);
+    const fd = new FormData();
+    fd.append("model", $("#model").value || "");
+    fd.append("pitch", String(pitch));
+    if (S.session.mix && !confirm("重新换音色会清空成品。继续？")) return;
+    await startStage("convert", fd, "正在换音色…");
+  };
+
+  /* 混音 */
+  $("#goMix").onclick = async () => {
+    if (!S.session?.conv) return toast("请先完成换音色", "err");
+    await startStage("mix", new FormData(), "正在混合与母带…");
+  };
+
+  /* 另存为 */
+  document.addEventListener("click", e => {
+    const b = e.target.closest("button.save");
+    if (!b) return;
+    e.preventDefault();
+    saveAs(b.dataset.url, b.dataset.name);
+  });
+
+  /* 变调常用值 */
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-pitch]");
+    if (!b) return;
+    e.preventDefault();
+    $("#pitch").value = b.dataset.pitch;
+  });
+
+  /* 历史 */
+  $("#refreshHistory").onclick = loadHistory;
+  document.addEventListener("click", e => {
+    const del = e.target.closest("[data-del]");
+    if (del) {
+      e.preventDefault();
+      deleteSessionById(del.dataset.del, del.dataset.title || "");
+      return;
+    }
+    const b = e.target.closest("[data-open]");
+    if (b) openSession(b.dataset.open);
+  });
+
+  /* 模型列表 */
+  document.addEventListener("click", async e => {
+    const use = e.target.closest("[data-use]");
+    if (use) {
+      $("#model").value = use.dataset.use;
+      showPage("cover");
+      $("#step-conv").scrollIntoView({ behavior: "smooth", block: "center" });
+      toast("已选择模型：" + use.dataset.use, "ok");
+      return;
+    }
+    const def = e.target.closest("[data-default]");
+    if (def) {
+      try {
+        const fd = new FormData();
+        fd.append("name", def.dataset.default);
+        await api("/api/models/default", { method: "POST", body: fd });
+        await loadModels();
+        const s = await api("/api/sessions/" + S.sid);
+        renderSession(s);
+        toast("默认模型已设为 " + def.dataset.default, "ok");
+      } catch (err) { toast(err.message, "err"); }
+    }
+  });
+
+  /* 训练 */
+  $("#refreshModels").onclick = async () => {
+    try { await loadModels(); toast("模型列表已刷新", "ok"); } catch (e) { toast(e.message, "err"); }
+  };
+  const dropTrain = $("#dropTrain"), trainFiles = $("#trainFiles");
+  dropTrain.onclick = () => trainFiles.click();
+  dropTrain.ondragover = e => { e.preventDefault(); dropTrain.classList.add("hover"); };
+  dropTrain.ondragleave = () => dropTrain.classList.remove("hover");
+  dropTrain.ondrop = e => {
+    e.preventDefault();
+    dropTrain.classList.remove("hover");
+    if (e.dataTransfer.files.length) {
+      trainFiles.files = e.dataTransfer.files;
+      onTrainFiles();
+    }
+  };
+  trainFiles.onchange = onTrainFiles;
+  $("#trainBtn").onclick = startTraining;
+  $("#cancelTrain").onclick = async () => {
+    if (!S.training) return;
+    try {
+      await api("/api/cancel/" + S.training, { method: "POST" });
+      toast("已请求取消，正在收尾…", "");
+    } catch (e) { toast(e.message, "err"); }
+  };
+}
+
+async function uploadSourceFile(file) {
+  if (running()) return;
+  if (hasDownstream() && !confirm(`上传《${file.name}》会清空官方伴奏、分离、换音色和成品。继续？`)) return;
+  const fd = new FormData();
+  fd.append("file", file);
+  await startStage("source", fd, `正在上传 ${file.name}…`);
+}
+
+async function uploadInstFile(file) {
+  if (running()) return;
+  if (!S.session?.source) return toast("请先获取源音频", "err");
+  if ((S.session.sep || S.session.conv || S.session.mix) &&
+      !confirm(`更换官方伴奏（${file.name}）会清空分离、换音色和成品。继续？`)) return;
+  const fd = new FormData();
+  fd.append("file", file);
+  S.instAuto = false;
+  await startStage("inst", fd, `正在上传伴奏 ${file.name}…`);
+}
+
+/* 每秒刷新已用时间 */
+setInterval(() => {
+  $$(".jmeta[data-start]").forEach(el => {
+    const t = parseFloat(el.dataset.start || "0");
+    if (!t) return;
+    el.textContent = " · 已用 " + Math.max(0, Math.round(Date.now() / 1000 - t)) + " 秒";
+  });
+}, 1000);
+
+/* ============================================================ 启动 */
+async function init() {
+  bind();
+  showPage(location.hash === "#train" ? "train" : "cover");
+  try {
+    await loadModels();
+    const qsid = new URLSearchParams(location.search).get("sid");
+    let sid = qsid || localStorage.getItem("cover.sid");
+    let sess = null;
+    if (sid) {
+      try { sess = await api("/api/sessions/" + sid); } catch (_) { sid = null; }
+    }
+    if (!sess) {
+      const r = await api("/api/sessions", { method: "POST" });
+      sid = r.id;
+      sess = await api("/api/sessions/" + sid);
+    }
+    S.sid = sid;
+    localStorage.setItem("cover.sid", sid);
+    syncUrl(S.page);
+    renderSession(sess);
+    if (sess.job && sess.job.status === "running") schedulePoll();
+    await loadHistory();
+
+    /* 训练中途刷新页面时，接着显示进度 */
+    const tid = localStorage.getItem("cover.trainJob");
+    if (tid) {
+      S.training = tid;
+      S.trainingRunning = true;
+      $("#tabTrain").classList.add("busy");
+      $("#trainProgress").hidden = false;
+      $("#trainMsg").textContent = "正在读取训练进度…";
+      $("#trainBtn").disabled = true;
+      pollTrain(tid);
+    }
+  } catch (e) {
+    toast("初始化失败：" + e.message, "err");
+  }
+}
+
+/* 界面脚本出错时至少让人看见，而不是静默停在半个页面 */
+window.addEventListener("error", ev => {
+  if (ev && ev.message) toast("界面脚本出错：" + ev.message, "err");
+});
+window.addEventListener("unhandledrejection", ev => {
+  const m = ev && ev.reason && (ev.reason.message || ev.reason);
+  if (m) toast("界面脚本出错：" + m, "err");
+});
+
+init();
+</script>
+</body>
+</html>

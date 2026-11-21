@@ -1,0 +1,19 @@
+# 运行产物
+.venv/
+webapp/sessions/
+webapp/jobs/
+webapp/__pycache__/
+work/__pycache__/
+tools/torch_cache/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# 训练中间件（体积很大，不要提交）
+tools/rvc_src/**/logs/
+
+# 系统
+Thumbs.db
+desktop.ini
+.DS_Store
